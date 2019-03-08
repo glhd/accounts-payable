@@ -2,7 +2,7 @@
 
 namespace Galahad\AccountsPayable\Contracts;
 
-interface Payable
+interface PayoutMethod
 {
-	public function is($model);
+
 }

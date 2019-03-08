@@ -3,7 +3,10 @@
 namespace Galahad\AccountsPayable;
 
 use Galahad\AccountsPayable\Events\ServingAccountsPayable;
+use Galahad\AccountsPayable\Http\Controller\PayoutMethodsController;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Routing\Router;
+use Illuminate\Support\Arr;
 
 class AccountsPayable
 {
@@ -17,9 +20,15 @@ class AccountsPayable
 	 */
 	protected $dispatcher;
 	
-	public function __construct(Dispatcher $dispatcher, array $config)
+	/**
+	 * @var \Illuminate\Routing\Router
+	 */
+	protected $router;
+	
+	public function __construct(Dispatcher $dispatcher, Router $router, array $config)
 	{
 		$this->dispatcher = $dispatcher;
+		$this->router = $router;
 		$this->config = $config;
 	}
 	
@@ -36,12 +45,17 @@ class AccountsPayable
 		return $this;
 	}
 	
-	public function basePath(string $path = null) : string
+	protected function routes() : self
 	{
-		$base_path = rtrim(dirname(__DIR__), DIRECTORY_SEPARATOR);
+		$path = Arr::get($this->config, 'path');
+		$middleware = Arr::get($this->config, 'middleware');
 		
-		return null === $path
-			? $base_path
-			: $base_path.DIRECTORY_SEPARATOR.ltrim($path, DIRECTORY_SEPARATOR);
+		$this->router
+			->middleware($middleware)
+			->prefix($path)
+			->name('accounts-payable.')
+			->resource('payout-methods', Arr::get($this->config, 'controllers.payouts'));
+		
+		return $this;
 	}
 }

@@ -11,27 +11,61 @@ class AccountsPayableDefaultContentSchema extends Migration
 	 */
 	public function up()
 	{
-		Schema::create('taxpayer_forms', function(Blueprint $table) {
+		// Represents a W-9 form
+		Schema::create('taxpayers', function(Blueprint $table) {
 			$table->bigIncrements('id');
-			$table->unsignedBigInteger('taxpayer_id')->index();
-			$table->string('form_name')->index();
-			$table->string('disk');
-			$table->string('path');
+			$table->morphs('payable');
 			$table->text('data');
 			$table->timestamps();
 			$table->softDeletes();
 		});
 		
-		Schema::create('taxpayer_ledger', function(Blueprint $table) {
+		// TODO: Forms for a tax year cannot be generated if any payouts for that year are still pending
+		
+		// Represents a 1099-MISC for a specific tax year
+		Schema::create('taxpayer_1099s', function(Blueprint $table) {
 			$table->bigIncrements('id');
-			$table->unsignedBigInteger('payout_id')->index();
 			$table->unsignedBigInteger('taxpayer_id')->index();
-			$table->unsignedInteger('payment_cents');
-			$table->unsignedInteger('tax_withheld_cents')->default(0);
-			$table->boolean('for_direct_consumer_resale')->default(false);
+			$table->unsignedSmallInteger('tax_year')->index();
+			$table->unsignedInteger('other_income_cents');
+			$table->string('disk')->nullable();
+			$table->string('path')->nullable();
 			$table->timestamps();
 			$table->softDeletes();
 		});
+		
+		// TODO: Line items cannot be updated once payout_id is not null
+		
+		Schema::create('taxpayer_line_items', function(Blueprint $table) {
+			$table->bigIncrements('id');
+			$table->unsignedBigInteger('taxpayer_id')->index();
+			$table->string('description')->nullable();
+			$table->bigInteger('cents');
+			$table->nullableMorphs('source');
+			$table->timestamps();
+			$table->softDeletes();
+		});
+		
+		Schema::create('taxpayer_payouts', function(Blueprint $table) {
+			$table->bigIncrements('id');
+			$table->unsignedBigInteger('taxpayer_id')->index();
+			$table->unsignedBigInteger('payout_method_id')->index();
+			$table->string('status')->default('pending');
+			$table->text('provider_payload')->nullable();
+			$table->timestamp('completed_at')->nullable();
+			$table->timestamp('cancelled_at')->nullable();
+			$table->timestamps();
+			$table->softDeletes();
+		});
+		
+		Schema::create('taxpayer_payout_line_items', function(Blueprint $table) {
+			$table->bigIncrements('id');
+			$table->unsignedBigInteger('payout_id')->index();
+			$table->unsignedBigInteger('line_item_id')->index();
+			$table->timestamps();
+		});
+		
+		// TODO: There must be one payout method where is_default = true, but no more than one
 		
 		Schema::create('taxpayer_payout_methods', function(Blueprint $table) {
 			$table->bigIncrements('id');
@@ -42,16 +76,20 @@ class AccountsPayableDefaultContentSchema extends Migration
 			$table->softDeletes();
 		});
 		
-		Schema::create('taxpayer_payouts', function(Blueprint $table) {
-			$table->bigIncrements('id');
-			$table->unsignedBigInteger('taxpayer_id')->index();
-			$table->unsignedBigInteger('payout_method_id')->index();
-			$table->unsignedBigInteger('form_id')->nullable();
-			$table->string('status')->default('pending');
-			$table->timestamp('completed_at')->nullable();
-			$table->timestamps();
-			$table->softDeletes();
-		});
+		// TODO: When a payout is cancelled, the line item's payout_id should be set to null
+		
+		// Schema::create('taxpayer_payouts', function(Blueprint $table) {
+		// 	$table->bigIncrements('id');
+		// 	$table->unsignedBigInteger('taxpayer_id')->index();
+		// 	$table->unsignedBigInteger('payout_method_id')->index();
+		// 	$table->unsignedBigInteger('form_id')->nullable();
+		// 	$table->string('status')->default('pending');
+		// 	$table->text('provider_payload')->nullable();
+		// 	$table->timestamp('completed_at')->nullable();
+		// 	$table->timestamp('cancelled_at')->nullable();
+		// 	$table->timestamps();
+		// 	$table->softDeletes();
+		// });
 	}
 	
 	/**
@@ -61,7 +99,8 @@ class AccountsPayableDefaultContentSchema extends Migration
 	{
 		Schema::dropIfExists('taxpayer_payouts');
 		Schema::dropIfExists('taxpayer_payout_methods');
-		Schema::dropIfExists('taxpayer_ledger');
+		Schema::dropIfExists('taxpayer_line_items');
 		Schema::dropIfExists('taxpayer_forms');
+		Schema::dropIfExists('taxpayer');
 	}
 }

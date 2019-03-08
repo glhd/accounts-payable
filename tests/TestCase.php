@@ -2,9 +2,8 @@
 
 namespace Galahad\AccountsPayable\Tests;
 
-use Galahad\AccountsPayable\Support\Facades\AccountsPayable;
 use Galahad\AccountsPayable\Support\AccountsPayableServiceProvider;
-use Illuminate\Foundation\Testing\TestResponse;
+use Galahad\AccountsPayable\Support\Facades\AccountsPayable;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra

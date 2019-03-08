@@ -14,7 +14,7 @@ return [
 	
 	/*
 	|--------------------------------------------------------------------------
-	| AccountsPayable Path
+	| Accounts Payable Path
 	|--------------------------------------------------------------------------
 	|
 	| This is the root path to serve Accounts Payable from.
@@ -40,8 +40,9 @@ return [
 	| Default Middleware
 	|--------------------------------------------------------------------------
 	|
-	| Middleware to pass Accounts Payable requests through. Should at least use auth
-	| middleware of some sort.
+	| Middleware to pass Accounts Payable requests through. All requrest should
+	| at least use auth middleware of some sort. Admin requests may require
+	| additional middleware.
 	|
 	*/
 	
@@ -49,14 +50,15 @@ return [
 	
 	/*
 	|--------------------------------------------------------------------------
-	| Authorization
+	| Controllers
 	|--------------------------------------------------------------------------
 	|
-	| Typically, you will want to register a Policy for access to Accounts Payable.
-	| But, to get things started quickly, you can add a list of users that should
-	| have full admin access here.
+	| If you need to deeply integrate Accounts Payable into your existing app,
+	| you can implement your own controllers.
 	|
 	*/
 	
-	'admin_ids' => [],
+	'controllers' => [
+		'payouts' => 'Galahad\AccountsPayable\Http\Controller\PayoutMethodsController',
+	],
 ];

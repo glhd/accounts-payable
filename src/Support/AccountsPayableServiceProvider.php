@@ -5,6 +5,8 @@ namespace Galahad\AccountsPayable\Support;
 use Galahad\AccountsPayable\Contracts\Payable;
 use Galahad\AccountsPayable\Events\ServingAccountsPayable;
 use Galahad\AccountsPayable\AccountsPayable;
+use Galahad\AccountsPayable\Models\TaxpayerPayoutMethod;
+use Galahad\AccountsPayable\Policies\PayoutMethodPolicy;
 use Galahad\AccountsPayable\Support\Policies\ConfigPolicy;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Config\Repository;
@@ -26,7 +28,6 @@ class AccountsPayableServiceProvider extends ServiceProvider
 		$this->bootConfig()
 			->bootPermissions($this->app->make(Gate::class), $this->app->make(Dispatcher::class))
 			->bootRoutes($this->app->make(Registrar::class))
-			->bootBlade($this->app->make(BladeCompiler::class))
 			->bootViews()
 			->bootMigrations()
 			->bootPublic();
@@ -38,7 +39,8 @@ class AccountsPayableServiceProvider extends ServiceProvider
 		
 		$this->app->singleton('glhd.accounts-payable', function(Application $app) {
 			return new AccountsPayable(
-				$app->make(Dispatcher::class),
+				$app['events'],
+				$app['router'],
 				$app['config']['accounts-payable']
 			);
 		});
@@ -53,17 +55,9 @@ class AccountsPayableServiceProvider extends ServiceProvider
 	 */
 	protected function bootPermissions(Gate $gate, Dispatcher $dispatcher) : self
 	{
-		$gate->define('_viewAccountsPayable', function() use ($gate) {
-			if ($gate->has('viewAccountsPayable')) {
-				return $gate->authorize('viewAccountsPayable');
-			}
-			
-			return $this->app->isLocal() || in_array(Auth::id(), config('accounts-payable.admin_ids', []));
-		});
-		
 		$dispatcher->listen(ServingAccountsPayable::class, function() use ($gate) {
-			if (null === $gate->getPolicyFor(Payable::class)) {
-				$gate->policy(Payable::class, ConfigPolicy::class);
+			if (null === $gate->getPolicyFor(TaxpayerPayoutMethod::class)) {
+				$gate->policy(Payable::class, PayoutMethodPolicy::class);
 			}
 		});
 		
@@ -77,37 +71,6 @@ class AccountsPayableServiceProvider extends ServiceProvider
 				$this->basePath('/config/accounts-payable.php') => $this->app->configPath('accounts-payable.php'),
 			], 'accounts-payable-config');
 		}
-		
-		return $this;
-	}
-	
-	protected function bootRoutes(Registrar $registrar) : self
-	{
-		$path = $this->config('path');
-		
-		// if ($registrar instanceof Router) {
-		// 	$registrar
-		// 		->redirect($path, "{$path}/web")
-		// 		->middleware($this->config('middleware'));
-		// }
-		//
-		// $registrar
-		// 	->get("{$path}/web/{any?}", FrontendController::class)
-		// 	->middleware($this->config('middleware'))
-		// 	->name('accounts-payable.frontend')
-		// 	->where('any', '.*');
-		
-		return $this;
-	}
-	
-	protected function bootBlade(BladeCompiler $compiler) : self
-	{
-		// $compiler->directive('accounts-payable', function ($expression) {
-		// 	$view_class = AccountsPayableView::class;
-		// 	$factory_class = Factory::class;
-		// 	$base_path = $this->basePath();
-		/*	return "<?php echo (new {$view_class}(app('glhd.accounts-payable.resolvers.content_type'), app({$factory_class}::class), '{$base_path}', $expression)); ?>";*/
-		// });
 		
 		return $this;
 	}

@@ -6,12 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-/**
- * @property-read \Galahad\AccountsPayable\Models\Taxpayer $taxpayer
- */
-class TaxpayerPayoutMethod extends Model
+class Taxpayer1099 extends Model
 {
 	use SoftDeletes;
+	
+	protected $table = 'taxpayer_1099s';
 	
 	public function taxpayer() : BelongsTo
 	{
